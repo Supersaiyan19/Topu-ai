@@ -93,6 +93,25 @@ smd(
         let participant = context.participant || (context.msg && context.msg.key.participant) || "Unknown";
         let chatName = context.chatId || "Unknown Chat";
 
+        // Try to fetch chat name (if in a group)
+        if (context.chatId && context.chatId.includes("@g.us")) {
+          // For group chats, fetch group name if available
+          try {
+            const group = await context.bot.getChat(context.chatId);
+            chatName = group.name || "Unnamed Group";
+          } catch (error) {
+            chatName = "Unknown Group";
+          }
+        } else {
+          // For personal chats, use the contact's name (if available)
+          try {
+            const contact = await context.bot.getContact(context.chatId);
+            chatName = contact.pushname || "Unknown Contact";
+          } catch (error) {
+            chatName = "Unknown Contact";
+          }
+        }
+
         // If quoted message exists, try fetching more details
         if (context.quoted) {
           participant = context.quoted.participant || participant;
