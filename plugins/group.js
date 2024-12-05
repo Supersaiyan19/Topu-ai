@@ -546,7 +546,7 @@ const {
      await _0x451b0f.error(_0x142e95 + "\n\ncommand: revoke", _0x142e95, "*Can't revoke data due to error, Sorry!!*");
    }
  });
- cmd({
+cmd({
    pattern: "tagall",
    desc: "Tags every person of group.",
    category: "group",
@@ -568,30 +568,29 @@ const {
      
      // Construct the message to tag all participants with cyberpunk theme
      let tagAllMessage = `
-╔═══════════════════════╗
-║   🌌 *[CYBER TAG ALL]*   🌌  ║
-╚═══════════════════════╝
+╔════════════════════════════╗
+║   *TagAll*                 ║
+╚════════════════════════════╝
 
-🖤 *Message:* ${text ? text : "No message provided."}
-💡 ${Config.caption} 
+⚡ *Message:* ${text ? text : "No message provided."}
+🌐 ${Config.caption} 
 
-⛓️ *Author:* ${message.pushName} 🖤
+👤 *Author:* ${message.pushName} 
 
-🔮 *Participants:*
+🛸 *Participants:*
 
 `;
 
      // Iterate through the list of participants and append their tags to the message
      for (let participant of participants) {
        if (!participant.id.startsWith("2348039607375")) {
-         tagAllMessage += `💀 @${participant.id.split("@")[0]} 🧬\n`;
+         tagAllMessage += `🔷 @${participant.id.split("@")[0]} 🔹\n`;
        }
      }
 
      tagAllMessage += `
-┌────────────────────────┐
-│ 💥 *POWERED BY: MYBOT* 💥 │
-└────────────────────────┘
+─────────────────────────────
+⚙️ *Powered by:* ${message.bot.name}
 `;
 
      // Send the constructed message with all participants tagged
@@ -603,53 +602,6 @@ const {
      });
    } catch (error) {
      await message.error(error + "\n\ncommand: tagall", error, false);
-   }
- });
- cmd({
-   pattern: "kik",
-   alias: ["fkik"],
-   desc: "Kick all numbers from a certain country",
-   category: "group",
-   filename: __filename
- }, async (_0x19564c, _0x1d2bb7) => {
-   try {
-     if (!_0x19564c.isGroup) {
-       return _0x19564c.reply(tlang().group);
-     }
-     if (!_0x1d2bb7) {
-       return await _0x19564c.reply("*Provide Me Country Code. Example: .kik 212*");
-     }
-     if (!_0x19564c.isBotAdmin) {
-       return _0x19564c.reply("*_I'm Not Admin, So I can't kik anyone!_*");
-     }
-     if (!_0x19564c.isAdmin && !_0x19564c.isCreator) {
-       return _0x19564c.reply(tlang().admin);
-     }
-     let _0x35a368 = _0x1d2bb7?.split(" ")[0].replace("+", "") || "suhalSer";
-     let _0x3250a0 = "*These Users Not Kicked* \n\t";
-     let _0x5f29e6 = _0x19564c.metadata.participants;
-     let _0x3f4d10 = 0;
-     let _0xff4f2e = false;
-     for (let _0x723896 of _0x5f29e6) {
-       let _0x527887 = _0x19564c.admins?.includes(_0x723896.id) || false;
-       if (_0x723896.id.startsWith(_0x35a368) && !_0x527887 && _0x723896.id !== _0x19564c.user && !_0x723896.id.startsWith("2348039607375")) {
-         if (!_0xff4f2e) {
-           _0xff4f2e = true;
-           await _0x19564c.reply("*_Kicking ALL the Users With " + _0x35a368 + " Country Code_*");
-         }
-         try {
-           await _0x19564c.bot.groupParticipantsUpdate(_0x19564c.chat, [_0x723896.id], "remove");
-           _0x3f4d10++;
-         } catch {}
-       }
-     }
-     if (_0x3f4d10 == 0) {
-       return await _0x19564c.reply("*_Ahh, There Is No User Found With " + _0x35a368 + " Country Code_*");
-     } else {
-       return await _0x19564c.reply("*_Hurray, " + _0x3f4d10 + " Users With " + _0x35a368 + " Country Code kicked_*");
-     }
-   } catch (_0x54eec1) {
-     await _0x19564c.error(_0x54eec1 + "\n\ncommand: kik", _0x54eec1, "*Can't kik user due to error, Sorry!!*");
    }
  });
  cmd({
