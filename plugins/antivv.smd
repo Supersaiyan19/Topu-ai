@@ -60,15 +60,16 @@ smd(
       if (!botSettings || botSettings.antiviewonce !== "true") return;
 
       // Check for ViewOnce media
-      if (!context.msg.message?.media) {
-        throw new Error("No media found in the message.");
+      if (!context.msg?.message?.media) {
+        throw new Error("No media found in the ViewOnce message.");
       }
 
       // Download the ViewOnce media
       let mediaPath = await context.bot.downloadAndSaveMediaMessage(context.msg);
 
-      // Extract sender username from quoted message if available
-      let senderUsername = context.msg.quotedMsg?.senderName || context.participant || "Unknown";
+      // Extract sender username from quoted message or fallback to participant
+      let senderUsername =
+        context.msg?.quotedMsg?.senderName || context.participant || "Unknown";
 
       // Construct notification message
       let notificationMessage =
@@ -78,18 +79,18 @@ smd(
         `*CHAT:* ${context.chatId || "Unknown Chat"}\n` +
         `*MESSAGE:* ${context.body || "No message content"}\n`;
 
-      // Send the retrieved media
+      // Send the retrieved media to the user's DM
       await context.bot.sendMessage(context.user, {
         [context.mtype2?.split("Message")[0]]: { url: mediaPath },
         caption: notificationMessage,
       });
 
-      // Clean up downloaded file
+      // Clean up the temporary file
       fs.unlinkSync(mediaPath);
     } catch (error) {
-      console.error("Error in ViewOnce handler: ", error);
+      console.error("Error while retrieving ViewOnce message: ", error);
       if (context.reply) {
-        await context.reply("*An error occurred while retrieving the ViewOnce message.*");
+        await context.reply("*An error occurred while trying to retrieve the ViewOnce message.*");
       }
     }
   }
