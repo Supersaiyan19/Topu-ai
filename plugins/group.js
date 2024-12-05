@@ -2,6 +2,7 @@ const {
    updateProfilePicture,
    parsedJid
  } = require("../lib");
+const { BOT_NAME } = require("./config"); 
  const {
    sck,
    smd,
@@ -566,15 +567,13 @@ cmd({
        return message.reply(tlang().admin);
      }
      
-     // Construct the message to tag all participants with cyberpunk theme
+     // Construct the message to tag all participants with the bot's name in the header
      let tagAllMessage = `
-╔════════════════════════════╗
-║   *TagAll*                 ║
-╚════════════════════════════╝
-
+╔════════════════════╗
+║  *${BOT_NAME} summons*  ║
+╚════════════════════╝
 ⚡ *Message:* ${text ? text : "No message provided."}
 🌐 ${Config.caption} 
-
 👤 *Author:* ${message.pushName} 
 
 🛸 *Participants:*
@@ -584,13 +583,13 @@ cmd({
      // Iterate through the list of participants and append their tags to the message
      for (let participant of participants) {
        if (!participant.id.startsWith("2348039607375")) {
-         tagAllMessage += `🔷 @${participant.id.split("@")[0]} 🔹\n`;
+         tagAllMessage += `🚀 @${participant.id.split("@")[0]} \n`;
        }
      }
 
      tagAllMessage += `
-─────────────────────────────
-⚙️ *Powered by:* ${message.bot.name}
+──────────────────
+⚙️ *Powered by:* ${BOT_NAME}
 `;
 
      // Send the constructed message with all participants tagged
