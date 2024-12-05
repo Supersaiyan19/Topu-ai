@@ -2,7 +2,6 @@ const {
    updateProfilePicture,
    parsedJid
  } = require("../lib");
-const { BOT_NAME } = require("./config"); 
  const {
    sck,
    smd,
@@ -570,7 +569,7 @@ cmd({
      // Construct the message to tag all participants with the bot's name in the header
      let tagAllMessage = `
 ╔════════════════════╗
-║  *${BOT_NAME} summons*  ║
+║  *🆃🅾🅿🆄 🅰🅸*  ║
 ╚════════════════════╝
 ⚡ *Message:* ${text ? text : "No message provided."}
 🌐 ${Config.caption} 
@@ -589,7 +588,7 @@ cmd({
 
      tagAllMessage += `
 ──────────────────
-⚙️ *Powered by:* ${BOT_NAME}
+⚙️ *Powered by:* 🆃🅾🅿🆄 🅰🅸
 `;
 
      // Send the constructed message with all participants tagged
