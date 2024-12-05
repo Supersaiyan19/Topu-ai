@@ -1,5 +1,5 @@
 const { smd, bot_ } = require("../lib");
-const fs = require("fs");
+let botSettings = false;
 
 // Command to enable or disable the AntiViewOnce feature
 smd(
@@ -14,36 +14,57 @@ smd(
   },
   async (context, message) => {
     try {
-      // Retrieve or create bot settings
-      let botSettings = await bot_.findOne({ id: "bot_" + context.user });
-      if (!botSettings) {
-        botSettings = await bot_.new({
+      // Retrieve or create the bot settings for the user
+      botSettings =
+        (await bot_.findOne({
           id: "bot_" + context.user,
-          antiviewonce: "false",
-        });
-      }
+        })) ||
+        (await bot_.new({
+          id: "bot_" + context.user,
+        }));
 
-      let command = (message || "").toLowerCase().trim();
-      if (["on", "enable", "act"].includes(command)) {
+      let command = message.toLowerCase().split(" ")[0].trim();
+
+      if (command === "on" || command === "enable" || command === "act") {
         if (botSettings.antiviewonce === "true") {
-          return await context.reply("*AntiViewOnce is already enabled!*");
+          return await context.reply("*AntiViewOnce already enabled!*");
         }
-        await bot_.updateOne({ id: "bot_" + context.user }, { antiviewonce: "true" });
-        return await context.reply("*AntiViewOnce successfully enabled!*");
-      } else if (["off", "disable", "deact"].includes(command)) {
+        await bot_.updateOne(
+          {
+            id: "bot_" + context.user,
+          },
+          {
+            antiviewonce: "true",
+          }
+        );
+        return await context.reply("*AntiViewOnce successfully enabled*");
+      } else if (
+        command === "off" ||
+        command === "disable" ||
+        command === "deact"
+      ) {
         if (botSettings.antiviewonce === "false") {
-          return await context.reply("*AntiViewOnce is already disabled!*");
+          return await context.reply("*AntiViewOnce already disabled*");
         }
-        await bot_.updateOne({ id: "bot_" + context.user }, { antiviewonce: "false" });
-        return await context.reply("*AntiViewOnce successfully disabled!*");
+        await bot_.updateOne(
+          {
+            id: "bot_" + context.user,
+          },
+          {
+            antiviewonce: "false",
+          }
+        );
+        return await context.reply("*AntiViewOnce successfully deactivated*");
       } else {
-        return await context.reply("*Usage: Use 'on' or 'off' to enable/disable AntiViewOnce!*");
+        return await context.send(
+          "*_Use on/off to enable/disable AntiViewOnce!_*"
+        );
       }
     } catch (error) {
-      console.error("Error in AntiViewOnce command: ", error);
-      if (context.reply) {
-        await context.reply("*An error occurred while processing your request.*");
-      }
+      await context.error(
+        error + "\n\nCommand: AntiViewOnce",
+        error
+      );
     }
   }
 );
@@ -55,43 +76,49 @@ smd(
   },
   async (context, message) => {
     try {
-      // Retrieve bot settings
-      let botSettings = await bot_.findOne({ id: "bot_" + context.user });
-      if (!botSettings || botSettings.antiviewonce !== "true") return;
-
-      // Check for ViewOnce media
-      if (!context.msg?.message?.media) {
-        throw new Error("No media found in the ViewOnce message.");
+      // Retrieve bot settings for the user
+      if (!botSettings) {
+        botSettings = await bot_.findOne({
+          id: "bot_" + context.user,
+        });
       }
+      // Check if AntiViewOnce is enabled
+      if (botSettings && botSettings.antiviewonce === "true") {
+        // Download the ViewOnce media
+        let mediaPath = await context.bot.downloadAndSaveMediaMessage(
+          context.msg
+        );
 
-      // Download the ViewOnce media
-      let mediaPath = await context.bot.downloadAndSaveMediaMessage(context.msg);
+        // Retrieve sender and chat details
+        let participant = context.participant || (context.msg && context.msg.key.participant) || "Unknown";
+        let chatName = context.chatId || "Unknown Chat";
 
-      // Extract sender username from quoted message or fallback to participant
-      let senderUsername =
-        context.msg?.quotedMsg?.senderName || context.participant || "Unknown";
+        // If quoted message exists, try fetching more details
+        if (context.quoted) {
+          participant = context.quoted.participant || participant;
+          chatName = context.quoted.chat || chatName;
+        }
 
-      // Construct notification message
-      let notificationMessage =
-        `*[VIEWONCE MESSAGE RETRIEVED]*\n\n` +
-        `*SENDER:* ${senderUsername}\n` +
-        `*TIME:* ${new Date().toLocaleTimeString()}\n` +
-        `*CHAT:* ${context.chatId || "Unknown Chat"}\n` +
-        `*MESSAGE:* ${context.body || "No message content"}\n`;
+        // Constructing the notification message
+        let notificationMessage = `*[VIEWONCE MESSAGE RETRIEVED]*\n\n` +
+          `*SENDER:* @${participant.split("@")[0]}\n` + 
+          `*TIME:* ${new Date().toLocaleTimeString()}\n` + 
+          `*CHAT:* ${chatName}\n` + 
+          `*MESSAGE:* ${context.body || 'No message content'}\n`; 
 
-      // Send the retrieved media to the user's DM
-      await context.bot.sendMessage(context.user, {
-        [context.mtype2?.split("Message")[0]]: { url: mediaPath },
-        caption: notificationMessage,
-      });
-
-      // Clean up the temporary file
-      fs.unlinkSync(mediaPath);
+        // Send the downloaded media to the user's DM with the notification message
+        await context.bot.sendMessage(
+          context.user,  // Sending to user's DM
+          {
+            [context.mtype2.split("Message")[0]]: {
+              url: mediaPath,
+            },
+            caption: notificationMessage,
+          }
+        );
+      }
     } catch (error) {
-      console.error("Error while retrieving ViewOnce message: ", error);
-      if (context.reply) {
-        await context.reply("*An error occurred while trying to retrieve the ViewOnce message.*");
-      }
+      console.log("Error while getting AntiViewOnce media: ", error);
     }
   }
 );
