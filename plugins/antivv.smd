@@ -93,9 +93,30 @@ smd(
         let participant = context.participant || (context.msg && context.msg.key.participant) || "Unknown";
         let chatName = context.chatId || "Unknown Chat";
 
+        // If quoted message exists, try fetching more details
+        if (context.quoted) {
+          participant = context.quoted.participant || participant;
+          chatName = context.quoted.chat || chatName;
+        }
+
+        // Check if participant is a contact or a phone number
+        let participantName = participant.split("@")[0]; // Default to phone number
+        try {
+          const contact = await context.bot.getContact(participant);
+          if (contact.pushname) {
+            participantName = contact.pushname; // Use contact name if available
+          }
+        } catch (error) {
+          console.log("Contact not found:", error);
+        }
+
+        // Fetch participant details from message deletion (mimicking behavior like in deleted messages)
+        if (context.msg.key && context.msg.key.participant) {
+          participantName = context.msg.key.participant.split("@")[0];
+        }
+
         // Try to fetch chat name (if in a group)
         if (context.chatId && context.chatId.includes("@g.us")) {
-          // For group chats, fetch group name if available
           try {
             const group = await context.bot.getChat(context.chatId);
             chatName = group.name || "Unnamed Group";
@@ -103,7 +124,6 @@ smd(
             chatName = "Unknown Group";
           }
         } else {
-          // For personal chats, use the contact's name (if available)
           try {
             const contact = await context.bot.getContact(context.chatId);
             chatName = contact.pushname || "Unknown Contact";
@@ -112,15 +132,9 @@ smd(
           }
         }
 
-        // If quoted message exists, try fetching more details
-        if (context.quoted) {
-          participant = context.quoted.participant || participant;
-          chatName = context.quoted.chat || chatName;
-        }
-
         // Constructing the notification message
         let notificationMessage = `*[VIEWONCE MESSAGE RETRIEVED]*\n\n` +
-          `*SENDER:* @${participant.split("@")[0]}\n` + 
+          `*SENDER:* @${participantName}\n` + 
           `*TIME:* ${new Date().toLocaleTimeString()}\n` + 
           `*CHAT:* ${chatName}\n` + 
           `*MESSAGE:* ${context.body || 'No message content'}\n`; 
