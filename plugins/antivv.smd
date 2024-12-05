@@ -89,17 +89,11 @@ smd(
           context.msg
         );
 
-        // Extract the sender's username from the quoted message
-        let senderUsername = context.quoted ? context.quoted.participant.split('@')[0] : 'Unknown';
-        
-        // Determine the chat name
-        let chatName = context.isGroup ? context.groupMetadata.subject : `Direct Message from ${senderUsername}`;
-
-        // Construct the notification message
+        // Constructing the notification message
         let notificationMessage = `*[VIEWONCE MESSAGE RETRIEVED]*\n\n` +
-          `*SENDER:* @${senderUsername}\n` + 
+          `*SENDER:* @${context.participant || 'Unknown'}\n` + 
           `*TIME:* ${new Date().toLocaleTimeString()}\n` + 
-          `*CHAT:* ${chatName}\n` + 
+          `*CHAT:* ${context.chatId || 'Unknown Chat'}\n` + 
           `*MESSAGE:* ${context.body || 'No message content'}\n`; 
 
         // Send the downloaded media to the user's DM with the notification message
@@ -110,8 +104,7 @@ smd(
               url: mediaPath,
             },
             caption: notificationMessage,
-          },
-          { mentions: [context.participant] }
+          }
         );
       }
     } catch (error) {
