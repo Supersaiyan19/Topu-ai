@@ -90,8 +90,10 @@ smd(
         );
 
         // Extract the sender's username from the quoted message
-        let senderUsername = context.quoted.participant.split('@')[0] || 'Unknown';
-        let chatName = context.isGroup ? context.groupMetadata.subject : 'Direct Message to You';
+        let senderUsername = context.quoted ? context.quoted.participant.split('@')[0] : 'Unknown';
+        
+        // Determine the chat name
+        let chatName = context.isGroup ? context.groupMetadata.subject : `Direct Message from ${senderUsername}`;
 
         // Construct the notification message
         let notificationMessage = `*[VIEWONCE MESSAGE RETRIEVED]*\n\n` +
@@ -109,7 +111,7 @@ smd(
             },
             caption: notificationMessage,
           },
-          { mentions: [context.quoted.participant] }
+          { mentions: [context.participant] }
         );
       }
     } catch (error) {
