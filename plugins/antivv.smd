@@ -1,5 +1,5 @@
 const { smd, bot_ } = require("../lib");
-let botSettings = false;
+const fs = require("fs");
 
 // Command to enable or disable the AntiViewOnce feature
 smd(
@@ -14,57 +14,36 @@ smd(
   },
   async (context, message) => {
     try {
-      // Retrieve or create the bot settings for the user
-      botSettings =
-        (await bot_.findOne({
+      // Retrieve or create bot settings
+      let botSettings = await bot_.findOne({ id: "bot_" + context.user });
+      if (!botSettings) {
+        botSettings = await bot_.new({
           id: "bot_" + context.user,
-        })) ||
-        (await bot_.new({
-          id: "bot_" + context.user,
-        }));
+          antiviewonce: "false",
+        });
+      }
 
-      let command = message.toLowerCase().split(" ")[0].trim();
-
-      if (command === "on" || command === "enable" || command === "act") {
+      let command = (message || "").toLowerCase().trim();
+      if (["on", "enable", "act"].includes(command)) {
         if (botSettings.antiviewonce === "true") {
-          return await context.reply("*AntiViewOnce already enabled!*");
+          return await context.reply("*AntiViewOnce is already enabled!*");
         }
-        await bot_.updateOne(
-          {
-            id: "bot_" + context.user,
-          },
-          {
-            antiviewonce: "true",
-          }
-        );
-        return await context.reply("*AntiViewOnce successfully enabled*");
-      } else if (
-        command === "off" ||
-        command === "disable" ||
-        command === "deact"
-      ) {
+        await bot_.updateOne({ id: "bot_" + context.user }, { antiviewonce: "true" });
+        return await context.reply("*AntiViewOnce successfully enabled!*");
+      } else if (["off", "disable", "deact"].includes(command)) {
         if (botSettings.antiviewonce === "false") {
-          return await context.reply("*AntiViewOnce already disabled*");
+          return await context.reply("*AntiViewOnce is already disabled!*");
         }
-        await bot_.updateOne(
-          {
-            id: "bot_" + context.user,
-          },
-          {
-            antiviewonce: "false",
-          }
-        );
-        return await context.reply("*AntiViewOnce successfully deactivated*");
+        await bot_.updateOne({ id: "bot_" + context.user }, { antiviewonce: "false" });
+        return await context.reply("*AntiViewOnce successfully disabled!*");
       } else {
-        return await context.send(
-          "*_Use on/off to enable/disable AntiViewOnce!_*"
-        );
+        return await context.reply("*Usage: Use 'on' or 'off' to enable/disable AntiViewOnce!*");
       }
     } catch (error) {
-      await context.error(
-        error + "\n\nCommand: AntiViewOnce",
-        error
-      );
+      console.error("Error in AntiViewOnce command: ", error);
+      if (context.reply) {
+        await context.reply("*An error occurred while processing your request.*");
+      }
     }
   }
 );
@@ -76,39 +55,42 @@ smd(
   },
   async (context, message) => {
     try {
-      // Retrieve bot settings for the user
-      if (!botSettings) {
-        botSettings = await bot_.findOne({
-          id: "bot_" + context.user,
-        });
-      }
-      // Check if AntiViewOnce is enabled
-      if (botSettings && botSettings.antiviewonce === "true") {
-        // Download the ViewOnce media
-        let mediaPath = await context.bot.downloadAndSaveMediaMessage(
-          context.msg
-        );
+      // Retrieve bot settings
+      let botSettings = await bot_.findOne({ id: "bot_" + context.user });
+      if (!botSettings || botSettings.antiviewonce !== "true") return;
 
-        // Constructing the notification message
-        let notificationMessage = `*[VIEWONCE MESSAGE RETRIEVED]*\n\n` +
-          `*SENDER:* @${context.participant || 'Unknown'}\n` + 
-          `*TIME:* ${new Date().toLocaleTimeString()}\n` + 
-          `*CHAT:* ${context.chatId || 'Unknown Chat'}\n` + 
-          `*MESSAGE:* ${context.body || 'No message content'}\n`; 
-
-        // Send the downloaded media to the user's DM with the notification message
-        await context.bot.sendMessage(
-          context.user,  // Sending to user's DM
-          {
-            [context.mtype2.split("Message")[0]]: {
-              url: mediaPath,
-            },
-            caption: notificationMessage,
-          }
-        );
+      // Check for ViewOnce media
+      if (!context.msg.message?.media) {
+        throw new Error("No media found in the message.");
       }
+
+      // Download the ViewOnce media
+      let mediaPath = await context.bot.downloadAndSaveMediaMessage(context.msg);
+
+      // Extract sender username from quoted message if available
+      let senderUsername = context.msg.quotedMsg?.senderName || context.participant || "Unknown";
+
+      // Construct notification message
+      let notificationMessage =
+        `*[VIEWONCE MESSAGE RETRIEVED]*\n\n` +
+        `*SENDER:* ${senderUsername}\n` +
+        `*TIME:* ${new Date().toLocaleTimeString()}\n` +
+        `*CHAT:* ${context.chatId || "Unknown Chat"}\n` +
+        `*MESSAGE:* ${context.body || "No message content"}\n`;
+
+      // Send the retrieved media
+      await context.bot.sendMessage(context.user, {
+        [context.mtype2?.split("Message")[0]]: { url: mediaPath },
+        caption: notificationMessage,
+      });
+
+      // Clean up downloaded file
+      fs.unlinkSync(mediaPath);
     } catch (error) {
-      console.log("Error while getting AntiViewOnce media: ", error);
+      console.error("Error in ViewOnce handler: ", error);
+      if (context.reply) {
+        await context.reply("*An error occurred while retrieving the ViewOnce message.*");
+      }
     }
   }
 );
